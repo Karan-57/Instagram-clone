@@ -2,6 +2,7 @@ var express = require("express");
 var router = express.Router();
 const userModel = require('./users');
 const postModel = require('./posts');
+const commentModel = require('./comment');
 const passport = require('passport');
 const localStrategy = require('passport-local');
 const upload = require('./multer');
@@ -25,6 +26,15 @@ router.get("/feed", isLoggedIn, async function(req, res) {
     const posts = await postModel.find().populate('user');
     res.render("feed", { posts, user });
 });
+
+router.get("/comments/:id", isLoggedIn, async(req, res) => {
+    const user = await userModel.findOne({ username: req.user.username });
+    const post = await postModel.findOne({ _id: req.params.id }).populate({
+        path: 'comments',
+        populate: { path: 'user' }
+    });
+    res.render("comments", { post, user });
+})
 
 router.get("/like/post/:id", isLoggedIn, async function(req, res) {
     const user = await userModel.findOne({ username: req.user.username });
@@ -77,6 +87,10 @@ router.get('/logout', function(req, res, next) {
         res.redirect('/');
     });
 });
+// router.get('/like/comment/:postId/:id', isLoggedIn, async(req, res) => {
+//     res.redirect(`/comments/${req.params.postId}`)
+// });
+
 
 //POST
 router.post('/register',
@@ -104,7 +118,7 @@ router.post('/register',
 
 
 router.post('/login', passport.authenticate('local', {
-    successRedirect: '/profile',
+    successRedirect: '/feed',
     failureRedirect: '/login'
 }), function(req, res) {});
 
@@ -114,6 +128,43 @@ router.post('/update', upload.single('image'), async(req, res) => {
     await user.save();
     res.redirect('/profile');
 });
+router.post("/upload", isLoggedIn, upload.single("image"), async function(req, res) {
+    const user = await userModel.findOne({ username: req.user.username });
+    const post = await postModel.create({
+        picture: req.file.filename,
+        caption: req.body.caption,
+        user: user._id
+    });
+    user.posts.push(post._id);
+    await user.save();
+    res.redirect('/feed');
+});
+
+router.post("/comments/:id", isLoggedIn, async(req, res) => {
+    const user = await userModel.findOne({ username: req.user.username });
+    const post = await postModel.findOne({ _id: req.params.id });
+    const comment = await commentModel.create({
+        body: req.body.body,
+        user
+    });
+    post.comments.push(comment._id);
+    await post.save();
+    res.redirect(`/comments/${req.params.id}`);
+});
+
+//id of particular comment which was liked
+router.get('/like/comment/:postId/:id', isLoggedIn, async(req, res) => {
+    const user = await userModel.findOne({ username: req.user.username });
+    const comment = await commentModel.findOne({ _id: req.params.id });
+    if (comment.likes.indexOf(user._id) === -1) {
+        comment.likes.push(user._id);
+    } else {
+        comment.likes.splice(comment.likes.indexOf(user._id), 1)
+    }
+    await comment.save();
+    res.redirect(`/comments/${req.params.postId}`)
+});
+
 
 // router.post('/register', function(req, res, next) {
 //     const userData = new userModel({
@@ -137,17 +188,6 @@ router.post('/update', upload.single('image'), async(req, res) => {
 //         });
 // });
 
-router.post("/upload", isLoggedIn, upload.single("image"), async function(req, res) {
-    const user = await userModel.findOne({ username: req.user.username });
-    const post = await postModel.create({
-        picture: req.file.filename,
-        caption: req.body.caption,
-        user: user._id
-    });
-    user.posts.push(post._id);
-    await user.save();
-    res.redirect('/feed');
-});
 
 
 function isLoggedIn(req, res, next) {
