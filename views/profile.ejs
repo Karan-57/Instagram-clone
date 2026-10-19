@@ -24,11 +24,11 @@
                     <span class="text-xs text-zinc-400">Posts</span>
                 </div>
                 <div class="flex flex-col items-center">
-                    <span class="font-bold text-base">142</span>
+                    <span class="font-bold text-base"><%= user.followers ? user.followers.length : 0 %></span>
                     <span class="text-xs text-zinc-400">Followers</span>
                 </div>
                 <div class="flex flex-col items-center">
-                    <span class="font-bold text-base">98</span>
+                    <span class="font-bold text-base"><%= user.following ? user.following.length : 0 %></span>
                     <span class="text-xs text-zinc-400">Following</span>
                 </div>
             </div>

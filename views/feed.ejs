@@ -64,31 +64,31 @@
 
             <% [...posts].reverse().forEach(function(elem){ %>
                 <article class="post border-b border-zinc-800/40 pb-4">
-                    <!-- Post Header -->
+                    <!-- Post Header (pfp, name, date on same line; ... removed) -->
                     <div class="title px-4 py-3 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full overflow-hidden border border-zinc-700 shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <a href="/profile/<%= elem.user ? elem.user._id : '#' %>" class="w-9 h-9 rounded-full overflow-hidden border border-zinc-700/60 shrink-0 hover:opacity-90">
                                 <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.user ? elem.user.profileImage : null) %>" alt="">
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-semibold leading-none"><%= elem.user ? elem.user.username : 'user' %></h4>
-                                <h6 class="text-[11px] text-zinc-400 mt-1">
-                                    <% 
-                                      const now = new Date();
-                                      const diff = now - new Date(elem.date);
-                                      const mins = Math.floor(diff / 60000);
-                                      const hrs = Math.floor(mins / 60);
-                                      const days = Math.floor(hrs / 24);
-                                      let timeAgo = 'Just now';
-                                      if (days > 0) timeAgo = `${days}d ago`;
-                                      else if (hrs > 0) timeAgo = `${hrs}h ago`;
-                                      else if (mins > 0) timeAgo = `${mins}m ago`;
-                                    %>
-                                    <%= timeAgo %>
-                                </h6>
-                            </div>
+                            </a>
+                            <a href="/profile/<%= elem.user ? elem.user._id : '#' %>" class="text-sm font-semibold hover:underline">
+                                <%= elem.user ? elem.user.username : 'user' %>
+                            </a>
+                            <span class="text-zinc-500 text-xs">•</span>
+                            <span class="text-xs text-zinc-400">
+                                <% 
+                                  const now = new Date();
+                                  const diff = now - new Date(elem.date);
+                                  const mins = Math.floor(diff / 60000);
+                                  const hrs = Math.floor(mins / 60);
+                                  const days = Math.floor(hrs / 24);
+                                  let timeAgo = 'just now';
+                                  if (days > 0) timeAgo = `${days}d`;
+                                  else if (hrs > 0) timeAgo = `${hrs}h`;
+                                  else if (mins > 0) timeAgo = `${mins}m`;
+                                %>
+                                <%= timeAgo %>
+                            </span>
                         </div>
-                        <button class="text-zinc-400 hover:text-white"><i class="ri-more-fill"></i></button>
                     </div>
 
                     <!-- Post Image -->
@@ -96,7 +96,7 @@
                         <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.picture) %>" alt="Post">
                     </div>
 
-                    <!-- Post Actions -->
+                    <!-- Post Actions (Save button removed) -->
                     <div class="options px-4 pt-3 flex justify-between items-center text-[1.4rem]">
                         <div class="flex gap-4 items-center">
                             <a href="/like/post/<%= elem._id %>" class="hover:opacity-80 transition-opacity">
@@ -113,9 +113,6 @@
                                 <i class="ri-send-plane-line"></i>
                             </a>
                         </div>
-                        <a href="#" class="hover:opacity-80 transition-opacity">
-                            <i class="ri-bookmark-line"></i>
-                        </a>
                     </div>
 
                     <!-- Likes count -->
@@ -127,14 +124,6 @@
                     <div class="px-4 mt-1 text-sm">
                         <span class="font-semibold mr-1"><%= elem.user ? elem.user.username : 'user' %></span>
                         <span class="text-zinc-200"><%= elem.caption %></span>
-                    </div>
-
-                    <!-- Comments preview link -->
-                    <div class="px-4 mt-1">
-                        <a href="/comments/<%= elem._id %>" class="text-xs text-zinc-500 hover:underline">
-                            <% const cCount = elem.comments ? elem.comments.length : 0; %>
-                            <%= cCount > 0 ? `View all ${cCount} comments` : 'Add a comment...' %>
-                        </a>
                     </div>
                 </article>
             <% }) %>

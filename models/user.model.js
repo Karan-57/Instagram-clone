@@ -15,6 +15,14 @@ const userSchema = new mongoose.Schema({
     stories: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'story'
+    }],
+    followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user'
+    }],
+    following: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user'
     }]
 });
 
