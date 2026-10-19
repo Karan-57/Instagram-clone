@@ -4,9 +4,14 @@
  * Module dependencies.
  */
 
+require('dotenv').config();
+
 var app = require('../app');
+var connectDB = require('../config/db');
 var debug = require('debug')('insta:server');
 var http = require('http');
+
+connectDB();
 
 /**
  * Get port from environment and store in Express.
