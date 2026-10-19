@@ -21,7 +21,7 @@
 
                         <!-- Profile Image -->
                         <div class="w-[60px] h-[60px] rounded-full overflow-hidden shrink-0">
-                            <img class="w-full h-full object-cover" src="/images/uploads/<%= elem.user.profileImage %>" alt="">
+                            <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.user.profileImage) %>" alt="">
                         </div>
 
                         <!-- Comment Content -->
@@ -78,7 +78,7 @@
         <div class=" mb-[70px] flex fixed bottom-0 w-full h-[70px] bg-zinc-900 border-t-[0.5px] border-zinc-700 ">
             <div class="title px-4 flex items-center gap-[15px]">
                 <div class="w-[9vw] h-[9vw] bg-sky-100 rounded-full overflow-hidden">
-                    <img class="w-full h-full object-cover" src="/images/uploads/<%=user.profileImage%>" alt="">
+                    <img class="w-full h-full object-cover" src="<%= getImageUrl(user.profileImage) %>" alt="">
                 </div>
                 <form action="/comments/<%=post._id%>" method="post">
                     <input name="body" type="text" class="border-[1px] border-zinc-700 rounded-full bg-transparent h-12 w-[300px] p-4" placeholder="write a comment...">

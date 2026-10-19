@@ -1,4 +1,5 @@
 const { userModel } = require('../models');
+const { uploadToImageKit } = require('../services/imagekit.service');
 
 async function getProfile(req, res) {
     const user = await userModel.findOne({ username: req.user.username }).populate('posts');
@@ -17,7 +18,9 @@ async function updateProfile(req, res) {
         { new: true }
     );
     if (req.file) {
-        user.profileImage = req.file.filename;
+        const fileName = `pfp_${Date.now()}_${req.file.originalname}`;
+        const imageUrl = await uploadToImageKit(req.file.buffer, fileName, 'instaclone/pfp');
+        user.profileImage = imageUrl;
     }
     await user.save();
     res.redirect('/profile');

@@ -1,4 +1,5 @@
 const { userModel, postModel, commentModel } = require('../models');
+const { uploadToImageKit } = require('../services/imagekit.service');
 
 async function getFeed(req, res) {
     const user = await userModel.findOne({ username: req.user.username });
@@ -13,8 +14,15 @@ async function getUploadPage(req, res) {
 
 async function createPost(req, res) {
     const user = await userModel.findOne({ username: req.user.username });
+    
+    let imageUrl = '';
+    if (req.file) {
+        const fileName = `post_${Date.now()}_${req.file.originalname}`;
+        imageUrl = await uploadToImageKit(req.file.buffer, fileName, 'instaclone/posts');
+    }
+
     const post = await postModel.create({
-        picture: req.file.filename,
+        picture: imageUrl,
         caption: req.body.caption,
         user: user._id
     });

@@ -35,7 +35,7 @@
                 <div class="post mt-10 w-full min-h-[50vh]">
                     <div class="title px-4 flex items-center gap-2">
                         <div class="w-[9vw] h-[9vw] bg-sky-100 rounded-full overflow-hidden">
-                            <img class="w-full h-full object-cover" src="/images/uploads/<%= elem.user.profileImage %>" alt="">
+                            <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.user.profileImage) %>" alt="">
                         </div>
                         <h4 class="text-sm">
                             <%= elem.user.username %>
@@ -43,7 +43,7 @@
                         <h6 class="text-xs opacity-30">date</h6>
                     </div>
                     <div class="relative w-full h-96 mt-4 bg-sky-100 overflow-hidden">
-                        <img class="postimg w-full h-full object-cover" src="/images/uploads/<%= elem.picture %>" alt="">
+                        <img class="postimg w-full h-full object-cover" src="<%= getImageUrl(elem.picture) %>" alt="">
                     </div>
                     <div class="options w-full px-4 flex justify-between items-center text-[1.4rem]">
                         <div class="flex gap-3 mt-2">

@@ -35,6 +35,20 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images/uploads', express.static(path.join(__dirname, 'public/images/uploads')));
 
+// Helper available in all EJS templates to resolve image paths:
+// If string starts with http(s), use it directly (ImageKit).
+// Otherwise prepend /images/uploads/ (local files/defaults).
+app.use((req, res, next) => {
+    res.locals.getImageUrl = function (imagePath, fallback = '/images/uploads/default.png') {
+        if (!imagePath) return fallback;
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            return imagePath;
+        }
+        return `/images/uploads/${imagePath}`;
+    };
+    next();
+});
+
 app.use('/', indexRouter);
 
 // catch 404 and forward to error handler
