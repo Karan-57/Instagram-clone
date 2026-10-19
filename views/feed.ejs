@@ -1,73 +1,537 @@
 <% include ./partials/header.ejs %>
-    <div class="w-full min-h-screen bg-zinc-900 text-white py-5">
-        <div class="w-full px-4 flex items-center justify-between">
-            <img class="w-1/4" src="/images/logo.png" alt="">
-            <div class="icons -mt-2 flex gap-5 items-center">
-                <i class="text-[1.4rem] ri-heart-3-line"></i>
-                <i class="text-[1.4rem] ri-messenger-line"></i>
+<div class="w-full min-h-screen bg-black flex justify-center">
+    <div class="w-full max-w-lg min-h-screen bg-zinc-900 border-x border-zinc-800/40 text-white pb-24">
+        <!-- Top Nav (Clean Instagram logo, notification and messenger removed) -->
+        <div class="w-full px-4 py-3 flex items-center justify-between border-b border-zinc-800/40 sticky top-0 bg-zinc-900/95 backdrop-blur-sm z-40">
+            <a href="/feed">
+                <img class="w-28" src="/images/logo.png" alt="Instagram">
+            </a>
+        </div>
+
+        <!-- Hidden Story Upload Form -->
+        <form id="storyUploadForm" action="/story/upload" method="POST" enctype="multipart/form-data" class="hidden">
+            <input type="file" id="storyFileInput" name="image" accept="image/*" onchange="handleStoryFileSelected(this)">
+        </form>
+
+        <!-- Stories Bar -->
+        <div class="story px-4 py-3 flex gap-4 overflow-x-auto border-b border-zinc-800/30 no-scrollbar">
+            <!-- Leftmost: Current User's Story -->
+            <div class="flex flex-col items-center gap-1 shrink-0 relative">
+                <div class="relative">
+                    <!-- Avatar circle with gradient ring if active stories exist -->
+                    <div class="w-16 h-16 rounded-full <%= (myStories && myStories.length > 0) ? 'bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-600 p-[2px] cursor-pointer hover:scale-105 transition-transform' : 'p-[2px] bg-zinc-800 cursor-pointer hover:border-zinc-700' %>"
+                         onclick="<%= (myStories && myStories.length > 0) ? 'openStoryViewer(\'me\')' : 'triggerStoryFileInput()' %>">
+                        <div class="w-full h-full rounded-full overflow-hidden bg-zinc-900 p-[2px]">
+                            <img class="w-full h-full rounded-full object-cover" src="<%= getImageUrl(user.profileImage) %>" alt="<%= user.username %>">
+                        </div>
+                    </div>
+
+                    <!-- Plus button on top to select photo -->
+                    <button type="button"
+                            onclick="event.stopPropagation(); triggerStoryFileInput();"
+                            title="Add to story"
+                            class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center border-2 border-zinc-900 shadow-lg transition-transform hover:scale-110 z-10">
+                        <i class="ri-add-line text-xs font-bold"></i>
+                    </button>
+                </div>
+                <span class="text-[11px] text-zinc-300 truncate max-w-[64px]">Your story</span>
+            </div>
+
+            <!-- Other Users' Stories with Gradient Rings -->
+            <% if (otherStories && otherStories.length > 0) { %>
+                <% otherStories.forEach(function(group, idx) { %>
+                    <div class="flex flex-col items-center gap-1 shrink-0 cursor-pointer group" onclick="openStoryViewer(<%= idx %>)">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-600 p-[2px] group-hover:scale-105 transition-transform shadow-md">
+                            <div class="w-full h-full rounded-full overflow-hidden bg-zinc-900 p-[2px]">
+                                <img class="w-full h-full rounded-full object-cover" src="<%= getImageUrl(group.user.profileImage) %>" alt="<%= group.user.username %>">
+                            </div>
+                        </div>
+                        <span class="text-[11px] text-zinc-300 truncate max-w-[64px] group-hover:text-white"><%= group.user.username %></span>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+
+        <!-- Posts Stream -->
+        <div class="posts flex flex-col">
+            <% if (posts.length === 0) { %>
+                <div class="w-full text-center py-20 text-zinc-500">
+                    <i class="ri-camera-line text-5xl"></i>
+                    <p class="mt-2 text-sm">No posts yet. Be the first to share a photo!</p>
+                    <a href="/upload" class="inline-block mt-4 px-4 py-2 bg-blue-500 text-white text-xs font-semibold rounded-md">Create Post</a>
+                </div>
+            <% } %>
+
+            <% [...posts].reverse().forEach(function(elem){ %>
+                <article class="post border-b border-zinc-800/40 pb-4">
+                    <!-- Post Header -->
+                    <div class="title px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-zinc-700 shrink-0">
+                                <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.user ? elem.user.profileImage : null) %>" alt="">
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold leading-none"><%= elem.user ? elem.user.username : 'user' %></h4>
+                                <h6 class="text-[11px] text-zinc-400 mt-1">
+                                    <% 
+                                      const now = new Date();
+                                      const diff = now - new Date(elem.date);
+                                      const mins = Math.floor(diff / 60000);
+                                      const hrs = Math.floor(mins / 60);
+                                      const days = Math.floor(hrs / 24);
+                                      let timeAgo = 'Just now';
+                                      if (days > 0) timeAgo = `${days}d ago`;
+                                      else if (hrs > 0) timeAgo = `${hrs}h ago`;
+                                      else if (mins > 0) timeAgo = `${mins}m ago`;
+                                    %>
+                                    <%= timeAgo %>
+                                </h6>
+                            </div>
+                        </div>
+                        <button class="text-zinc-400 hover:text-white"><i class="ri-more-fill"></i></button>
+                    </div>
+
+                    <!-- Post Image -->
+                    <div class="relative w-full aspect-square bg-zinc-800 overflow-hidden flex items-center justify-center">
+                        <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.picture) %>" alt="Post">
+                    </div>
+
+                    <!-- Post Actions -->
+                    <div class="options px-4 pt-3 flex justify-between items-center text-[1.4rem]">
+                        <div class="flex gap-4 items-center">
+                            <a href="/like/post/<%= elem._id %>" class="hover:opacity-80 transition-opacity">
+                                <% if (elem.likes && elem.likes.some(id => id.toString() === user._id.toString())) { %>
+                                    <i class="ri-heart-3-fill text-red-500"></i>
+                                <% } else { %>
+                                    <i class="ri-heart-3-line"></i>
+                                <% } %>
+                            </a>
+                            <a href="/comments/<%= elem._id %>" class="hover:opacity-80 transition-opacity">
+                                <i class="ri-chat-3-line"></i>
+                            </a>
+                            <a href="#" class="hover:opacity-80 transition-opacity">
+                                <i class="ri-send-plane-line"></i>
+                            </a>
+                        </div>
+                        <a href="#" class="hover:opacity-80 transition-opacity">
+                            <i class="ri-bookmark-line"></i>
+                        </a>
+                    </div>
+
+                    <!-- Likes count -->
+                    <div class="px-4 mt-2">
+                        <p class="text-xs font-semibold"><%= elem.likes ? elem.likes.length : 0 %> likes</p>
+                    </div>
+
+                    <!-- Caption -->
+                    <div class="px-4 mt-1 text-sm">
+                        <span class="font-semibold mr-1"><%= elem.user ? elem.user.username : 'user' %></span>
+                        <span class="text-zinc-200"><%= elem.caption %></span>
+                    </div>
+
+                    <!-- Comments preview link -->
+                    <div class="px-4 mt-1">
+                        <a href="/comments/<%= elem._id %>" class="text-xs text-zinc-500 hover:underline">
+                            <% const cCount = elem.comments ? elem.comments.length : 0; %>
+                            <%= cCount > 0 ? `View all ${cCount} comments` : 'Add a comment...' %>
+                        </a>
+                    </div>
+                </article>
+            <% }) %>
+        </div>
+    </div>
+</div>
+
+<!-- ================= Story Upload Preview Modal ================= -->
+<div id="storyPreviewModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-4 flex flex-col items-center shadow-2xl">
+        <div class="flex items-center justify-between w-full mb-3">
+            <h3 class="text-sm font-semibold text-white">Add to story</h3>
+            <button onclick="cancelStoryUpload()" class="text-zinc-400 hover:text-white">
+                <i class="ri-close-line text-xl"></i>
+            </button>
+        </div>
+        <div class="w-full aspect-[9/16] max-h-[60vh] bg-black rounded-xl overflow-hidden mb-4 flex items-center justify-center border border-zinc-800">
+            <img id="storyPreviewImg" src="" alt="Story Preview" class="w-full h-full object-contain">
+        </div>
+        <div class="flex gap-3 w-full">
+            <button type="button" onclick="cancelStoryUpload()" class="flex-1 py-2.5 px-4 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs font-semibold transition-colors">
+                Cancel
+            </button>
+            <button type="button" id="submitStoryBtn" onclick="submitStoryUpload()" class="flex-1 py-2.5 px-4 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                <span id="submitStoryText">Share Story</span>
+                <i id="submitStorySpinner" class="ri-loader-4-line animate-spin hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= Fullscreen Instagram Story Viewer Modal ================= -->
+<div id="storyViewerModal" class="hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center select-none">
+    <!-- Desktop Side Navigation Arrows -->
+    <button onclick="prevStory()" class="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white items-center justify-center transition-colors z-20">
+        <i class="ri-arrow-left-s-line text-2xl"></i>
+    </button>
+    <button onclick="nextStory()" class="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white items-center justify-center transition-colors z-20">
+        <i class="ri-arrow-right-s-line text-2xl"></i>
+    </button>
+
+    <!-- Story Player Card -->
+    <div id="storyCard" class="relative w-full max-w-sm sm:max-w-md h-full sm:h-[90vh] bg-zinc-950 sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between">
+        <!-- Background Blur Layer -->
+        <div id="storyBgBlur" class="absolute inset-0 bg-center bg-cover filter blur-xl opacity-30 pointer-events-none"></div>
+
+        <!-- Top Header & Segmented Progress Bars -->
+        <div class="relative z-30 p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+            <!-- Progress Bars Container -->
+            <div id="storyProgressBars" class="flex gap-1.5 w-full mb-3">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- User Info Bar -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full overflow-hidden border border-white/20 shrink-0">
+                        <img id="storyUserPfp" class="w-full h-full object-cover" src="" alt="">
+                    </div>
+                    <div>
+                        <span id="storyUsername" class="text-xs font-semibold text-white drop-shadow"></span>
+                        <span id="storyTimeAgo" class="text-[10px] text-zinc-300 ml-1.5 drop-shadow"></span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- Delete button (visible only for own story) -->
+                    <button id="storyDeleteBtn" onclick="deleteCurrentStory()" title="Delete Story" class="hidden text-zinc-300 hover:text-red-400 p-1">
+                        <i class="ri-delete-bin-line text-lg"></i>
+                    </button>
+                    <!-- Close button -->
+                    <button onclick="closeStoryViewer()" title="Close" class="text-zinc-300 hover:text-white p-1">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
-
-        <div class="story px-3 flex gap-3 overflow-auto mt-5">
-            <a href="/story">
-                <div class="circle flex-shrink-0">
-                    <div class="gradient w-[18vw] h-[18vw] bg-sky-100 rounded-full bg-gradient-to-r from-purple-700 to-orange-500 flex items-center justify-center">
-                        <div class="inner w-[92%] h-[92%] rounded-full overflow-hidden">
-                            <img class="w-full h-full object-cover" src="/images/uploads/default.png" alt="">
-                        </div>
-                    </div>
-                </div>
-            </a>
-            <a href="#">
-                <div class="circle flex-shrink-0">
-                    <div class="gradient w-[18vw] h-[18vw] bg-sky-100 rounded-full bg-gradient-to-r from-purple-700 to-orange-500 flex items-center justify-center">
-                        <div class="inner w-[92%] h-[92%] rounded-full overflow-hidden">
-                            <img class="w-full h-full object-cover" src="/images/uploads/default.png" alt="">
-                        </div>
-                    </div>
-                </div>
-            </a>
+        <!-- Center Story Image -->
+        <div class="relative z-10 w-full flex-1 flex items-center justify-center overflow-hidden">
+            <img id="storyMainImg" class="w-full h-full object-contain" src="" alt="Story">
+            <div id="storyPauseIndicator" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-sm pointer-events-none">
+                <i class="ri-pause-line text-2xl"></i>
+            </div>
         </div>
 
-        <div class="posts parent mb-20">
-            <% posts.reverse().forEach(function(elem){ %>
-                <div class="post mt-10 w-full min-h-[50vh]">
-                    <div class="title px-4 flex items-center gap-2">
-                        <div class="w-[9vw] h-[9vw] bg-sky-100 rounded-full overflow-hidden">
-                            <img class="w-full h-full object-cover" src="<%= getImageUrl(elem.user.profileImage) %>" alt="">
-                        </div>
-                        <h4 class="text-sm">
-                            <%= elem.user.username %>
-                        </h4>
-                        <h6 class="text-xs opacity-30">date</h6>
-                    </div>
-                    <div class="relative w-full h-96 mt-4 bg-sky-100 overflow-hidden">
-                        <img class="postimg w-full h-full object-cover" src="<%= getImageUrl(elem.picture) %>" alt="">
-                    </div>
-                    <div class="options w-full px-4 flex justify-between items-center text-[1.4rem]">
-                        <div class="flex gap-3 mt-2">
-                            <a href="/like/post/<%=elem._id%>">
-                                <% if(elem.likes.indexOf(user._id) !== -1){ %>
-                                    <i class="heart ri-heart-3-fill text-red-600"></i>
-                                    <%}else{%>
-                                        <i class="heart ri-heart-3-line"></i>
-                                        <%}%>
-                            </a>
-                            <a href="/comments/<%=elem.id%>">
-                                <i class="ri-chat-3-line"></i>
-                            </a>
-                            <i class="ri-share-circle-line"></i>
-                        </div>
-                    </div>
-                    <h3 class="likeval px-4 mt-2 text-sm leading-none tracking-tight">
-                        <%=elem.likes.length%> likes</h3>
-                    <h2 class="text-white font-light text-sm mt-2"><span class="font-semibold pl-4 pr-2"><%=elem.user.username%></span>
-                        <%=elem.caption%>
-                    </h2>
-                    <% }) %>
-                </div>
+        <!-- Touch/Click Tap Targets for Navigation -->
+        <div class="absolute inset-0 z-20 flex">
+            <!-- Left 35% taps Previous -->
+            <div class="w-[35%] h-full cursor-pointer" onclick="prevStory()" onmousedown="startPause()" onmouseup="endPause()" ontouchstart="startPause()" ontouchend="endPause()"></div>
+            <!-- Right 65% taps Next -->
+            <div class="w-[65%] h-full cursor-pointer" onclick="nextStory()" onmousedown="startPause()" onmouseup="endPause()" ontouchstart="startPause()" ontouchend="endPause()"></div>
         </div>
+    </div>
+</div>
 
+<script>
+    // ================= DATA INITIALIZATION =================
+    const allStoryGroups = [];
 
-        <% include ./partials/footer.ejs %>
+    // Current user's stories group
+    <% if (myStories && myStories.length > 0) { %>
+    allStoryGroups.push({
+        isMe: true,
+        user: {
+            _id: "<%= user._id %>",
+            username: "<%= user.username %>",
+            profileImage: "<%= getImageUrl(user.profileImage) %>"
+        },
+        stories: <%- JSON.stringify(myStories.map(s => ({
+            _id: s._id,
+            story: getImageUrl(s.story),
+            date: s.date
+        }))) %>
+    });
+    <% } %>
+
+    // Other users' stories groups
+    <% if (otherStories && otherStories.length > 0) { %>
+    <% otherStories.forEach(function(g) { %>
+    allStoryGroups.push({
+        isMe: false,
+        user: {
+            _id: "<%= g.user._id %>",
+            username: "<%= g.user.username %>",
+            profileImage: "<%= getImageUrl(g.user.profileImage) %>"
+        },
+        stories: <%- JSON.stringify(g.stories.map(s => ({
+            _id: s._id,
+            story: getImageUrl(s.story),
+            date: s.date
+        }))) %>
+    });
+    <% }) %>
+    <% } %>
+
+    // ================= STORY UPLOAD HANDLERS =================
+    function triggerStoryFileInput() {
+        document.getElementById('storyFileInput').click();
+    }
+
+    function handleStoryFileSelected(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('storyPreviewImg').src = e.target.result;
+                const modal = document.getElementById('storyPreviewModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function cancelStoryUpload() {
+        const modal = document.getElementById('storyPreviewModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('storyFileInput').value = '';
+    }
+
+    function submitStoryUpload() {
+        const btn = document.getElementById('submitStoryBtn');
+        const text = document.getElementById('submitStoryText');
+        const spinner = document.getElementById('submitStorySpinner');
+
+        btn.disabled = true;
+        text.textContent = 'Sharing...';
+        spinner.classList.remove('hidden');
+
+        document.getElementById('storyUploadForm').submit();
+    }
+
+    // ================= STORY VIEWER CONTROLLER =================
+    let currentGroupIdx = 0;
+    let currentStoryIdx = 0;
+    const STORY_DURATION = 5000; // 5 seconds per story
+    let storyProgress = 0;
+    let progressTimer = null;
+    let isPaused = false;
+    let holdTimer = null;
+
+    function openStoryViewer(target) {
+        if (allStoryGroups.length === 0) return;
+
+        if (target === 'me') {
+            currentGroupIdx = allStoryGroups.findIndex(g => g.isMe);
+            if (currentGroupIdx === -1) return;
+        } else if (typeof target === 'number') {
+            // Find target in other groups
+            const hasMe = allStoryGroups.some(g => g.isMe);
+            currentGroupIdx = hasMe ? target + 1 : target;
+            if (currentGroupIdx >= allStoryGroups.length) currentGroupIdx = 0;
+        }
+
+        currentStoryIdx = 0;
+        document.getElementById('storyViewerModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        renderCurrentStory();
+    }
+
+    function closeStoryViewer() {
+        stopProgressTimer();
+        document.getElementById('storyViewerModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function renderCurrentStory() {
+        stopProgressTimer();
+        const group = allStoryGroups[currentGroupIdx];
+        if (!group || !group.stories || group.stories.length === 0) {
+            closeStoryViewer();
+            return;
+        }
+
+        const story = group.stories[currentStoryIdx];
+        if (!story) {
+            closeStoryViewer();
+            return;
+        }
+
+        // Set User details
+        document.getElementById('storyUserPfp').src = group.user.profileImage;
+        document.getElementById('storyUsername').textContent = group.isMe ? 'Your story' : group.user.username;
+
+        // Calculate time ago
+        const diff = Date.now() - new Date(story.date).getTime();
+        const mins = Math.floor(diff / 60000);
+        const hrs = Math.floor(mins / 60);
+        let timeText = 'Just now';
+        if (hrs > 0) timeText = `${hrs}h`;
+        else if (mins > 0) timeText = `${mins}m`;
+        document.getElementById('storyTimeAgo').textContent = timeText;
+
+        // Show/hide Delete button
+        const deleteBtn = document.getElementById('storyDeleteBtn');
+        if (group.isMe) {
+            deleteBtn.classList.remove('hidden');
+        } else {
+            deleteBtn.classList.add('hidden');
+        }
+
+        // Set Images
+        document.getElementById('storyMainImg').src = story.story;
+        document.getElementById('storyBgBlur').style.backgroundImage = `url('${story.story}')`;
+
+        // Render progress bars
+        const barsContainer = document.getElementById('storyProgressBars');
+        barsContainer.innerHTML = '';
+        group.stories.forEach((_, idx) => {
+            const barBg = document.createElement('div');
+            barBg.className = 'flex-1 h-1 bg-white/30 rounded-full overflow-hidden';
+
+            const barFill = document.createElement('div');
+            barFill.id = `storyBar_${idx}`;
+            barFill.className = 'h-full bg-white transition-all duration-75';
+            if (idx < currentStoryIdx) {
+                barFill.style.width = '100%';
+            } else {
+                barFill.style.width = '0%';
+            }
+
+            barBg.appendChild(barFill);
+            barsContainer.appendChild(barBg);
+        });
+
+        // Start progress
+        startProgressTimer();
+    }
+
+    function startProgressTimer() {
+        stopProgressTimer();
+        storyProgress = 0;
+        const intervalStep = 50; // update every 50ms
+        const progressIncrement = (intervalStep / STORY_DURATION) * 100;
+
+        progressTimer = setInterval(() => {
+            if (isPaused) return;
+
+            storyProgress += progressIncrement;
+            const currentBar = document.getElementById(`storyBar_${currentStoryIdx}`);
+            if (currentBar) {
+                currentBar.style.width = `${Math.min(storyProgress, 100)}%`;
+            }
+
+            if (storyProgress >= 100) {
+                nextStory();
+            }
+        }, intervalStep);
+    }
+
+    function stopProgressTimer() {
+        if (progressTimer) {
+            clearInterval(progressTimer);
+            progressTimer = null;
+        }
+    }
+
+    function nextStory() {
+        const group = allStoryGroups[currentGroupIdx];
+        if (!group) return;
+
+        if (currentStoryIdx < group.stories.length - 1) {
+            currentStoryIdx++;
+            renderCurrentStory();
+        } else {
+            // Advance to next user group
+            if (currentGroupIdx < allStoryGroups.length - 1) {
+                currentGroupIdx++;
+                currentStoryIdx = 0;
+                renderCurrentStory();
+            } else {
+                closeStoryViewer();
+            }
+        }
+    }
+
+    function prevStory() {
+        const group = allStoryGroups[currentGroupIdx];
+        if (!group) return;
+
+        if (currentStoryIdx > 0) {
+            currentStoryIdx--;
+            renderCurrentStory();
+        } else {
+            // Go to previous user group
+            if (currentGroupIdx > 0) {
+                currentGroupIdx--;
+                currentStoryIdx = allStoryGroups[currentGroupIdx].stories.length - 1;
+                renderCurrentStory();
+            } else {
+                renderCurrentStory();
+            }
+        }
+    }
+
+    function startPause() {
+        holdTimer = setTimeout(() => {
+            isPaused = true;
+            document.getElementById('storyPauseIndicator').classList.remove('hidden');
+        }, 150);
+    }
+
+    function endPause() {
+        clearTimeout(holdTimer);
+        isPaused = false;
+        document.getElementById('storyPauseIndicator').classList.add('hidden');
+    }
+
+    async function deleteCurrentStory() {
+        const group = allStoryGroups[currentGroupIdx];
+        if (!group || !group.isMe) return;
+
+        const story = group.stories[currentStoryIdx];
+        if (!story) return;
+
+        if (!confirm('Are you sure you want to delete this story?')) {
+            return;
+        }
+
+        stopProgressTimer();
+
+        try {
+            const res = await fetch(`/story/delete/${story._id}`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' }
+            });
+            if (res.ok) {
+                group.stories.splice(currentStoryIdx, 1);
+                if (group.stories.length === 0) {
+                    allStoryGroups.splice(currentGroupIdx, 1);
+                    closeStoryViewer();
+                    window.location.reload();
+                } else {
+                    if (currentStoryIdx >= group.stories.length) {
+                        currentStoryIdx = group.stories.length - 1;
+                    }
+                    renderCurrentStory();
+                }
+            } else {
+                alert('Could not delete story. Please try again.');
+            }
+        } catch (err) {
+            console.error('Delete story error:', err);
+        }
+    }
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('storyViewerModal');
+        if (modal.classList.contains('hidden')) return;
+
+        if (e.key === 'ArrowRight') nextStory();
+        else if (e.key === 'ArrowLeft') prevStory();
+        else if (e.key === 'Escape') closeStoryViewer();
+    });
+</script>
+
+<% include ./partials/footer.ejs %>

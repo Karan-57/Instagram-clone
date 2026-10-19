@@ -1,3 +1,4 @@
+require('dotenv').config();
 const ImageKit = require('imagekit');
 
 const imagekit = new ImageKit({
@@ -23,7 +24,42 @@ async function uploadToImageKit(fileBuffer, fileName, folder = 'instaclone') {
     return response.url;
 }
 
+/**
+ * Upload a story file buffer to ImageKit inside 'instaclone/stories'
+ * @param {Buffer} fileBuffer - The file buffer from multer (file.buffer)
+ * @param {string} fileName - File name to save as
+ * @returns {Promise<{ url: string, fileId: string }>} - The uploaded file URL and fileId
+ */
+async function uploadStoryToImageKit(fileBuffer, fileName) {
+    const response = await imagekit.upload({
+        file: fileBuffer,
+        fileName: fileName,
+        folder: 'instaclone/stories'
+    });
+
+    return {
+        url: response.url,
+        fileId: response.fileId
+    };
+}
+
+/**
+ * Delete a file from ImageKit by fileId
+ * @param {string} fileId - The ImageKit fileId
+ */
+async function deleteFromImageKit(fileId) {
+    if (!fileId) return;
+    try {
+        await imagekit.deleteFile(fileId);
+        console.log(`Deleted file ${fileId} from ImageKit`);
+    } catch (err) {
+        console.error(`Failed to delete file ${fileId} from ImageKit:`, err.message);
+    }
+}
+
 module.exports = {
     imagekit,
-    uploadToImageKit
+    uploadToImageKit,
+    uploadStoryToImageKit,
+    deleteFromImageKit
 };

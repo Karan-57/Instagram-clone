@@ -1,10 +1,12 @@
 const { userModel, postModel, commentModel } = require('../models');
 const { uploadToImageKit } = require('../services/imagekit.service');
+const { getActiveStoriesForFeed } = require('./story.controller');
 
 async function getFeed(req, res) {
     const user = await userModel.findOne({ username: req.user.username });
     const posts = await postModel.find().populate('user');
-    res.render("feed", { posts, user });
+    const { myStories, otherStories } = await getActiveStoriesForFeed(user);
+    res.render("feed", { posts, user, myStories, otherStories });
 }
 
 async function getUploadPage(req, res) {

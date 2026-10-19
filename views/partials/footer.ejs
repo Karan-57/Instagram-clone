@@ -1,12 +1,14 @@
-<div class="fixed bottom-0 text-white flex justify-between items-center w-full z-50 bg-zinc-900 px-10 py-3">
-    <a href="/feed"><i class="text-[1.4rem] ri-home-line"></i></a>
-    <a href="/search"><i class="text-[1.4rem] ri-search-line"></i></a>
-    <a href="/upload"><i class="text-[1.4rem] ri-add-box-line"></i></a>
-    <a href="/profile">
-        <div class="w-8 h-8 bg-zinc-300 rounded-full overflow-hidden">
-            <img class="w-full h-full object-cover" src="<%= getImageUrl(user.profileImage) %>" alt="">
-        </div>
-    </a>
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800">
+    <div class="max-w-lg mx-auto flex justify-between items-center px-8 py-3 text-white">
+        <a href="/feed" class="hover:text-zinc-300 transition-colors"><i class="text-[1.5rem] ri-home-line"></i></a>
+        <a href="/search" class="hover:text-zinc-300 transition-colors"><i class="text-[1.5rem] ri-search-line"></i></a>
+        <a href="/upload" class="hover:text-zinc-300 transition-colors"><i class="text-[1.5rem] ri-add-box-line"></i></a>
+        <a href="/profile" class="hover:opacity-80 transition-opacity">
+            <div class="w-8 h-8 rounded-full overflow-hidden border border-zinc-700">
+                <img class="w-full h-full object-cover" src="<%= getImageUrl(user ? user.profileImage : null) %>" alt="">
+            </div>
+        </a>
+    </div>
 </div>
 <script>
     document.addEventListener("DOMContentLoaded", function(event) {
@@ -18,3 +20,5 @@
         localStorage.setItem('scrollpos', window.scrollY);
     };
 </script>
+</body>
+</html>
